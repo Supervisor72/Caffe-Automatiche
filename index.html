@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Macchine Caffè — DML Italia</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F7F6F2;--surface:#FFFFFF;--border:#E2E0D8;--border-md:#C8C6BE;
+  --text:#1A1917;--muted:#6B6860;--hint:#A09E98;
+  --green:#1D9E75;--green-light:#E1F5EE;--green-dark:#085041;--green-mid:#0F6E56;
+  --red:#A32D2D;--red-light:#FCEBEB;--red-dark:#791F1F;
+  --amber:#BA7517;--amber-light:#FAEEDA;--amber-dark:#633806;
+  --blue-light:#E6F1FB;--blue-dark:#0C447C;
+  --r:12px;--rsm:8px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem 5rem;}
+.wrap{width:100%;max-width:680px;}
+.brand{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--hint);margin-bottom:8px;}
+h1{font-size:24px;font-weight:600;margin-bottom:4px;}
+.subtitle{font-size:13px;color:var(--muted);margin-bottom:1.75rem;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;margin-bottom:1rem;}
+.reg-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field.full{grid-column:1/-1;}
+label{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.04em;}
+input[type=text],select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--rsm);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s;}
+input[type=text]:focus,select:focus{border-color:var(--green);}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23A09E98' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+.btn-start{width:100%;padding:12px;background:var(--text);color:var(--surface);border:none;border-radius:var(--rsm);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;margin-top:4px;}
+.btn-start:hover{background:#333;}
+.field-error{border-color:var(--red) !important;}
+.err-msg{font-size:11px;color:var(--red);margin-top:2px;display:none;}
+.info-box{background:#F1EFE8;border-radius:var(--rsm);padding:10px 14px;font-size:13px;color:#5F5E5A;margin-bottom:14px;line-height:1.5;}
+.top-bar{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.timer-pill{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);transition:all .3s;}
+.timer-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.timer-val{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;color:var(--text);min-width:52px;}
+.timer-pill.warn{border-color:var(--amber);background:var(--amber-light);}
+.timer-pill.warn .timer-dot{background:var(--amber);}
+.timer-pill.warn .timer-val{color:var(--amber-dark);}
+.timer-pill.over{border-color:var(--red);background:var(--red-light);}
+.timer-pill.over .timer-dot{background:var(--red);animation:blink .7s infinite;}
+.timer-pill.over .timer-val{color:var(--red-dark);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.penalty-badge{font-size:12px;padding:5px 12px;border-radius:999px;background:var(--red-light);color:var(--red-dark);border:1px solid #F09595;display:none;}
+.prog-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--hint);margin-bottom:5px;}
+.pbar-bg{height:3px;background:var(--border);border-radius:2px;margin-bottom:1.25rem;overflow:hidden;}
+.pbar-fill{height:3px;background:var(--green);border-radius:2px;transition:width .4s ease;}
+.qlabel{font-size:11px;color:var(--hint);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;}
+.qtext{font-size:15px;font-weight:500;line-height:1.55;margin-bottom:1.1rem;}
+.opts{display:flex;flex-direction:column;gap:7px;}
+.obtn{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border:1px solid var(--border);border-radius:var(--rsm);background:var(--bg);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);text-align:left;line-height:1.4;transition:background .1s,border-color .1s;}
+.obtn:hover:not(:disabled){background:#EFEDE7;border-color:var(--border-md);}
+.oletter{font-size:11px;color:var(--hint);min-width:16px;padding-top:2px;flex-shrink:0;}
+.obtn.correct{background:var(--green-light);border-color:var(--green);color:var(--green-dark);}
+.obtn.correct .oletter{color:var(--green);}
+.obtn.wrong{background:var(--red-light);border-color:var(--red);color:var(--red-dark);}
+.obtn.wrong .oletter{color:var(--red);}
+.obtn.reveal{background:var(--green-light);border-color:var(--green);color:var(--green-dark);opacity:.8;}
+.obtn.reveal .oletter{color:var(--green);}
+.obtn:disabled{cursor:default;}
+.fb{margin-top:12px;padding:11px 14px;border-left:3px solid;border-radius:0;font-size:13px;line-height:1.55;display:none;}
+.fb.ok{display:block;border-color:var(--green);background:var(--green-light);color:var(--green-dark);}
+.fb.ko{display:block;border-color:var(--red);background:var(--red-light);color:var(--red-dark);}
+.nav{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.score-disp{font-size:13px;color:var(--muted);}
+.btn-next{padding:9px 22px;background:var(--text);color:var(--surface);border:none;border-radius:var(--rsm);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;display:none;}
+.btn-next:hover{background:#333;}
+.res-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:2.5rem 1.5rem;text-align:center;}
+.res-user{font-size:14px;color:var(--muted);margin-bottom:1rem;}
+.res-big{font-size:60px;font-weight:600;line-height:1;color:var(--text);}
+.res-sub{font-size:13px;color:var(--hint);font-family:'DM Mono',monospace;margin:4px 0 1rem;}
+.res-badge{display:inline-block;padding:5px 18px;border-radius:999px;font-size:13px;font-weight:500;margin-bottom:1.5rem;}
+.badge-gold{background:var(--amber-light);color:var(--amber-dark);}
+.badge-silver{background:var(--blue-light);color:var(--blue-dark);}
+.badge-bronze{background:#F1EFE8;color:#444441;}
+.res-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem;}
+.res-cell{background:var(--bg);border-radius:var(--rsm);padding:12px 6px;}
+.res-num{font-size:20px;font-weight:600;color:var(--text);}
+.res-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.penalty-note{font-size:12px;color:var(--red-dark);background:var(--red-light);padding:8px 14px;border-radius:var(--rsm);margin-bottom:1rem;}
+.wrong-list{text-align:left;margin-bottom:1.5rem;}
+.wrong-list h3{font-size:12px;font-weight:500;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;}
+.wrong-item{padding:10px 12px;border-left:3px solid var(--red);background:var(--red-light);border-radius:0;margin-bottom:7px;font-size:13px;line-height:1.45;color:var(--red-dark);}
+.wrong-item strong{display:block;margin-bottom:3px;}
+.btn-mail{width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--rsm);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;margin-bottom:10px;}
+.btn-mail:hover{background:var(--green-mid);}
+.btn-restart{width:100%;padding:11px;background:transparent;color:var(--text);border:1px solid var(--border);border-radius:var(--rsm);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;}
+.btn-restart:hover{background:var(--bg);}
+.mail-sent{font-size:12px;color:var(--green-mid);text-align:center;margin-bottom:10px;padding:8px;background:var(--green-light);border-radius:var(--rsm);display:none;}
+@media(max-width:480px){
+  h1{font-size:20px;}
+  .reg-grid{grid-template-columns:1fr;}
+  .res-grid{grid-template-columns:repeat(2,1fr);}
+  .res-big{font-size:48px;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">DML Italia · Formazione Prodotto</div>
+  <h1>Test Macchine da Caffè Automatiche</h1>
+  <p class="subtitle">20 domande · Timer 6 minuti · De'Longhi · Philips</p>
+  <div id="app"></div>
+</div>
+<script>
+const TOTAL_SECONDS = 360;
+const DEST_EMAIL = "d.pavoni@dml-italia.com";
+const STORES = ["Fano","Monsano","Osimo","Macerata","Civitanova","Pesaro","Foligno"];
+const LETTERS = ["A","B","C","D"];
+
+const questions = [
+  {
+    q:"Cosa si intende per macchina da caffè 'superautomatica' (o completamente automatica)?",
+    opts:["Una macchina che usa solo capsule o cialde preconfezionate","Una macchina che esegue automaticamente tutte le fasi: macina i chicchi freschi, pressatura, infusione ed erogazione — tutto con la pressione di un solo tasto","Una macchina manuale ad alta pressione per baristi professionisti","Una macchina che prepara solo caffè americano lungo"],
+    ans:1,
+    exp:"Le macchine superautomatiche (come tutta la gamma De'Longhi ECAM e Philips Series) partono dal chicco intero e arrivano alla tazzina in automatico: macinano, pressano, infondono ed erogano senza intervento manuale. Il risultato è sempre fresco e personalizzabile."
+  },
+  {
+    q:"Qual è la gamma entry-level di De'Longhi per le macchine superautomatiche, ideale per chi inizia?",
+    opts:["PrimaDonna — il top di gamma De'Longhi","Magnifica — la serie di ingresso con le funzioni essenziali (espresso, caffè, cappuccino manuale) al miglior rapporto qualità/prezzo","Dinamica Plus — fascia media con display a colori","Maestosa — la macchina professionale per uso domestico"],
+    ans:1,
+    exp:"La gamma Magnifica (Magnifica Start, Magnifica S, Magnifica Evo) è il punto di ingresso De'Longhi: prezzo accessibile, uso semplice con pulsanti o icone, macinacaffè integrato. Perfetta per chi vuole la prima superautomatica senza complicazioni."
+  },
+  {
+    q:"Cosa aggiunge la De'Longhi Magnifica Evo rispetto alla Magnifica Start?",
+    opts:["Solo un colore diverso, le funzionalità sono identiche","Il sistema LatteCrema automatico: prepara cappuccini e bevande al latte con un solo tocco grazie alla caraffa del latte integrata — la Start ha solo il pannarello manuale","Un display touchscreen a colori TFT","La connessione Wi-Fi e l'app Coffee Link"],
+    ans:1,
+    exp:"La Magnifica Evo aggiunge il sistema LatteCrema: una caraffa del latte che schiumizza automaticamente il latte alla temperatura perfetta per cappuccini, latte macchiato e caffellatte one-touch. La Start ha solo il classico pannarello manuale a vapore — scelta ideale per chi vuole semplicità totale."
+  },
+  {
+    q:"Cosa caratterizza la gamma De'Longhi Dinamica rispetto alla Magnifica?",
+    opts:["La Dinamica è più economica e meno potente","Display a colori TFT, maggiore personalizzazione delle bevande, profili utente salvabili e — nei modelli Plus — connettività Wi-Fi con app Coffee Link","La Dinamica usa solo capsule Nespresso","La Dinamica ha un design più compatto della Magnifica"],
+    ans:1,
+    exp:"La gamma Dinamica alza l'asticella con display a colori touch, più bevande personalizzabili, possibilità di salvare i propri profili preferiti e — nella versione Plus — connessione all'app Coffee Link per creare e scaricare nuove ricette direttamente sullo smartphone."
+  },
+  {
+    q:"Cosa offre la tecnologia 'LatteCrema Hot' esclusiva De'Longhi presente su Dinamica Plus, Eletta e PrimaDonna?",
+    opts:["Una funzione per preparare caffè freddo tipo cold brew","Un sistema che riscalda e schiumizza il latte in modo completamente automatico producendo una crema densa, soffice e vellutata — senza dover pulire un pannarello a vapore","Un sistema di decalcificazione automatica mensile","Un doppio boiler per espresso e vapore simultanei"],
+    ans:1,
+    exp:"LatteCrema Hot è il sistema brevettato De'Longhi che aspira il latte direttamente dalla caraffa, lo scalda e lo schiumizza automaticamente raggiungendo la temperatura e la consistenza ideali. La caraffa si smonta facilmente ed è lavabile in lavastoviglie — argomento di vendita forte per chi vuole cappuccini perfetti senza fatica."
+  },
+  {
+    q:"Qual è la differenza tra De'Longhi Eletta Explore e Dinamica Plus?",
+    opts:["Sono identiche, diverso solo il nome commerciale","Eletta Explore aggiunge bevande fredde one-touch (cold brew, iced coffee) oltre alle calde, display più grande e design premium — la Dinamica Plus ha solo bevande calde","L'Eletta Explore usa capsule, la Dinamica Plus usa chicchi","La Dinamica Plus è più grande e pesante dell'Eletta Explore"],
+    ans:1,
+    exp:"L'Eletta Explore è la prima De'Longhi a offrire bevande fredde one-touch: cold brew, caffè freddo, iced latte — tutto automaticamente senza aggiungere ghiaccio manualmente. Ha anche un display touchscreen più grande e finiture più pregiate rispetto alla Dinamica Plus."
+  },
+  {
+    q:"Cosa è la De'Longhi PrimaDonna Soul e a chi si rivolge?",
+    opts:["È la macchina entry-level della gamma PrimaDonna","È il top di gamma De'Longhi: tecnologia Bean Adapt (ottimizzazione automatica dei parametri in base al tipo di chicco), app Coffee Link avanzata, LatteCrema Hot, oltre 30 bevande e finiture in metallo premium — per chi non accetta compromessi","È una macchina compatta per piccole cucine","È la versione PrimaDonna compatibile con capsule Nespresso"],
+    ans:1,
+    exp:"La PrimaDonna Soul è il non-plus-ultra De'Longhi: la tecnologia Bean Adapt analizza il tipo di chicco e adatta automaticamente macinatura e infusione per estrarne il massimo aroma. Oltre 30 bevande personalizzabili, connettività avanzata e materiali premium la rendono la scelta per gli appassionati esigenti."
+  },
+  {
+    q:"Cosa si intende per 'Bean Adapt' nella De'Longhi PrimaDonna Soul?",
+    opts:["Un contenitore per chicchi con chiusura ermetica salva-aroma","Una tecnologia che analizza automaticamente le caratteristiche del chicco (torrefazione, miscela) e adatta i parametri di macinatura e infusione per ottenere la migliore estrazione possibile","Un filtro carbone attivo per migliorare la qualità dell'acqua","Un sistema di autopulizia del macinacaffè dopo ogni utilizzo"],
+    ans:1,
+    exp:"Bean Adapt è la tecnologia AI di De'Longhi che 'legge' il tipo di chicco e regola automaticamente la macinatura, la pressatura e i tempi di infusione per estrarre il massimo da ogni miscela. Argomento ideale per il cliente appassionato che cambia spesso tipo di caffè."
+  },
+  {
+    q:"Quali serie compongono la lineup di macchine superautomatiche Philips attualmente in commercio?",
+    opts:["Solo la Serie 3200 e la Serie 5400","Serie 1200, 2200, 3200, 4300 e 5400 — con complessità e prezzo crescenti","Serie Basic, Pro e Ultra","Serie A, B e C con caratteristiche identiche"],
+    ans:1,
+    exp:"Philips ha una lineup molto chiara e scalare: 1200 (essenziale, entry-level), 2200 (un gradino in più con più bevande), 3200 (aggiunge il sistema LatteGo), 4300 (display touch e più personalizzazione) e 5400 (top con 12 bevande, 4 profili utente e LatteGo). Più alto il numero, più funzioni e prezzo."
+  },
+  {
+    q:"Cos'è il sistema 'LatteGo' di Philips, presente dalla Serie 3200 in su?",
+    opts:["Un sistema di capsule latte preconfezionate da inserire nella macchina","Un sistema di schiumatura del latte senza tubi né ugelli: il latte viene fatto girare ad alta velocità in un contenitore speciale producendo schiuma cremosa — solo 2 pezzi da lavare, anche in lavastoviglie","Un riscaldatore di tazze integrato nel piano superiore della macchina","Un sistema di filtraggio dell'acqua con cartucce mensili"],
+    ans:1,
+    exp:"LatteGo è il punto di forza Philips: sistema di schiumatura brevettato con solo 2 parti da lavare (tutto in lavastoviglie) e nessun tubo del vapore da pulire. Produce una schiuma vellutata e uniforme in automatico. Argomento di vendita potentissimo per chi odia la pulizia del pannarello."
+  },
+  {
+    q:"Qual è la differenza pratica tra Philips Serie 2200 e Serie 3200?",
+    opts:["Sono identiche, la 3200 costa solo di più per il brand","La Serie 3200 aggiunge il sistema LatteGo per bevande al latte completamente automatiche e senza sporco, mentre la 2200 ha solo il pannarello classico manuale","La Serie 3200 ha una maggiore pressione della pompa","La Serie 3200 è più compatta e leggera della 2200"],
+    ans:1,
+    exp:"La Serie 2200 prepara ottimi espressi e caffè, ma per cappuccini e bevande al latte usa il pannarello classico a vapore (da azionare manualmente e pulire). La Serie 3200 aggiunge LatteGo: cappuccini e latte macchiato one-touch, senza sporcare il pannarello. Differenza chiave per chi vuole comodità totale."
+  },
+  {
+    q:"Cosa offre la Philips Serie 5400 rispetto alla Serie 3200 che giustifica il prezzo più alto?",
+    opts:["Solo un design più moderno e colori diversi","12 bevande diverse (incluse americano, caffè crema, cafè au lait), funzione Extra Shot, 12 livelli di macinatura, 4 profili utente salvabili e 5 livelli di intensità aroma — contro le 6-8 bevande e meno opzioni della 3200","La Serie 5400 include una capsula di caffè in omaggio","La Serie 5400 è l'unica con LatteGo tra le Philips"],
+    ans:1,
+    exp:"La Philips Serie 5400 è il top della gamma Philips consumer: 12 bevande (tra cui americano, caffè crema, cafè au lait), funzione Extra Shot per aggiungere un ristretto extra, 12 livelli di macinatura vs 5 della 3200, 4 profili utente personalizzabili e 5 livelli di intensità. Ideale per famiglie con gusti diversi."
+  },
+  {
+    q:"Cosa indica la pressione della pompa espressa in 'bar' in una macchina da caffè superautomatica?",
+    opts:["La potenza del motore in watt — più bar, più il motore è potente","La pressione con cui l'acqua calda attraversa il caffè macinato durante l'estrazione — 15 bar è il valore standard ottimale per un espresso cremoso con buona crema","La temperatura massima dell'acqua in gradi Celsius","La capacità del serbatoio dell'acqua in litri"],
+    ans:1,
+    exp:"15 bar è il valore standard ottimale per le superautomatiche: garantisce una buona estrazione degli oli aromatici dal caffè e una crema densa e persistente. Tutte le macchine De'Longhi e Philips lavorano a 15 bar — un valore più alto non significa necessariamente caffè migliore nelle automatiche consumer."
+  },
+  {
+    q:"Perché è importante comunicare al cliente la capacità del serbatoio dell'acqua (in litri)?",
+    opts:["La capacità del serbatoio non è rilevante per il cliente","Determina quante tazze si possono preparare prima di dover ricaricare — un serbatoio da 1,8 lt permette circa 10-12 espressi, ideale per uso familiare. Chi prepara molti caffè al giorno può preferire modelli con serbatoio da 2,2 lt come alcune PrimaDonna","Capacità maggiore significa sempre caffè di qualità superiore","Solo i professionisti devono considerare la capacità del serbatoio"],
+    ans:1,
+    exp:"Un serbatoio da 1,8 lt (standard su quasi tutta la gamma Philips e De'Longhi Magnifica) è sufficiente per una famiglia di 3-4 persone. Chi ospita spesso o è un grande consumatore può preferire modelli con serbatoi più capienti (2,2 lt sulla PrimaDonna). Da chiedere sempre al cliente quante tazze prepara al giorno."
+  },
+  {
+    q:"Un cliente dice 'voglio un cappuccino perfetto premendo un solo tasto, senza sporcare niente'. Quale tipo di macchina è più adatta?",
+    opts:["Una macchina con pannarello manuale a vapore — è la più professionale","Una macchina con sistema automatico del latte integrato: LatteCrema (De'Longhi Magnifica Evo, Dinamica, Eletta, PrimaDonna) o LatteGo (Philips Serie 3200, 4300, 5400) — cappuccino one-touch e sistema latte lavabile in lavastoviglie","Una macchina a capsule — è la più semplice","Una macchina manuale professionale da barista"],
+    ans:1,
+    exp:"Per cappuccini one-touch senza sforzo né sporco: De'Longhi con LatteCrema (dalla Magnifica Evo in su) o Philips con LatteGo (dalla Serie 3200 in su). Entrambi i sistemi schiumano il latte automaticamente e la caraffa/il contenitore si smonta e si lava in lavastoviglie. Argomento di chiusura vendita molto efficace."
+  },
+  {
+    q:"Cosa è il 'macinacaffè a basso numero di giri' (o 'macinino a basse rpm') presente su alcune De'Longhi premium?",
+    opts:["Un macinacaffè più lento che produce meno caffè in assoluto","Un macinacaffè che macina i chicchi lentamente, generando meno calore durante la macinatura — preservando gli aromi volatili del caffè che andrebbero persi con la macinatura ad alta velocità","Un macinacaffè che usa meno elettricità","Un macinacaffè silenzioso adatto all'uso notturno"],
+    ans:1,
+    exp:"Il calore generato dalla macinatura ad alta velocità può degradare gli aromi volatili del caffè. I macinacaffè a basse rpm (come quelli delle De'Longhi premium) macinano più lentamente, mantengono la temperatura bassa e preservano la complessità aromatica del chicco — argomento per il cliente appassionato della qualità."
+  },
+  {
+    q:"Cosa si intende per 'decalcificazione' e perché è importante comunicarla al cliente?",
+    opts:["Un processo di pulizia solo estetico della scocca esterna","Un ciclo di pulizia interna che rimuove il calcare depositato dal'acqua nel sistema idraulico — il calcare riduce le prestazioni, danneggia la macchina e altera il gusto del caffè. Tutte le superautomatiche segnalano quando è il momento e guidano l'utente nel ciclo","Una funzione che serve solo nelle zone con acqua molto dura","Una pulizia che va fatta in assistenza tecnica, non a casa"],
+    ans:1,
+    exp:"La decalcificazione è una manutenzione fondamentale: il calcare ostruisce il sistema idraulico, abbassa la temperatura dell'acqua, altera l'aroma del caffè e può danneggiare la macchina irreparabilmente. Tutte le De'Longhi e Philips segnalano automaticamente quando serve e guidano il ciclo step-by-step — da spiegare sempre al cliente per garantire la longevità dell'acquisto."
+  },
+  {
+    q:"Qual è il vantaggio del filtro dell'acqua AquaClean (De'Longhi) o del filtro integrato (Philips) nelle macchine superautomatiche?",
+    opts:["Il filtro permette di non dover mai decalcificare la macchina per tutta la sua vita","Il filtro riduce il calcare nell'acqua e può estendere significativamente l'intervallo tra una decalcificazione e l'altra (fino a 5.000 tazze con AquaClean De'Longhi), migliorando anche il gusto del caffè","Il filtro è solo un accessorio cosmetico senza benefici reali","Il filtro è obbligatorio solo nelle zone con acqua molto dura"],
+    ans:1,
+    exp:"Il filtro AquaClean di De'Longhi riduce il calcare e — se installato e sostituito regolarmente — può permettire fino a 5.000 tazze senza decalcificare. Philips offre filtri simili. È un accessorio da proporre sempre come upsell: protegge la macchina, migliora il gusto e riduce la manutenzione. Ottimo per aumentare lo scontrino."
+  },
+  {
+    q:"Un cliente ha un budget di circa 300 euro e vuole una macchina semplice per espresso e cappuccino. Cosa consiglieresti?",
+    opts:["De'Longhi PrimaDonna Soul — è la migliore in assoluto","De'Longhi Magnifica Start o Philips Serie 2200: entrambe in quella fascia di prezzo, semplici da usare, macinacaffè integrato e pannarello manuale per il cappuccino — perfette come prima superautomatica","Philips Serie 5400 — è la più completa","Una macchina a capsule Nespresso — costa meno e fa lo stesso caffè"],
+    ans:1,
+    exp:"Con 300 euro la scelta è tra De'Longhi Magnifica Start (circa 280-320€, icone intuitive, uso semplicissimo) e Philips Serie 2200 (circa 250-320€, display touch, 3 bevande one-touch). Entrambe hanno macinacaffè integrato e pannello manuale per il latte. Da non proporre la 5400 o PrimaDonna fuori budget — rischio di perdere il cliente."
+  },
+  {
+    q:"Cosa distingue De'Longhi da Philips come punto di forza principale da comunicare al cliente indeciso tra i due brand?",
+    opts:["De'Longhi è sempre migliore di Philips in tutto","De'Longhi offre la gamma più ampia e bevande fredde (Eletta Explore), tecnologia Bean Adapt top e design italiano. Philips eccelle per il sistema LatteGo (facilissimo da pulire, solo 2 pezzi in lavastoviglie) e una lineup più chiara e scalare per numero di serie — la scelta dipende dalle priorità del cliente","Philips è sempre più economica di De'Longhi a parità di funzioni","Entrambe le macchine sono identiche, conta solo il prezzo"],
+    ans:1,
+    exp:"La risposta giusta è sempre basata sulle esigenze del cliente: De'Longhi ha una gamma più ampia (incluse bevande fredde con Eletta Explore, Bean Adapt su PrimaDonna, design italiano premium). Philips si distingue per il LatteGo facilissimo da pulire (solo 2 pezzi, lavastoviglie) e una gamma numerata molto intuitiva da capire. Ascolta il cliente e orienta di conseguenza."
+  }
+];
+
+let userData={}, current=0, score=0, answered=false;
+let timerInterval=null, secondsElapsed=0, overtime=false, penaltyPoints=0;
+let wrongAnswers=[];
+const app=document.getElementById('app');
+
+function fmt(s){
+  const m=Math.floor(Math.abs(s)/60),sec=Math.abs(s)%60;
+  return (s<0?'-':'')+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+
+function showReg(){
+  app.innerHTML=`
+    <div class="card">
+      <div class="qlabel">Prima di iniziare</div>
+      <div class="qtext" style="font-size:16px;margin-bottom:1.25rem;">Inserisci i tuoi dati</div>
+      <div class="reg-grid">
+        <div class="field">
+          <label>NOME</label>
+          <input type="text" id="fname" placeholder="Es. Marco">
+          <span class="err-msg" id="err-fname">Campo obbligatorio</span>
+        </div>
+        <div class="field">
+          <label>COGNOME</label>
+          <input type="text" id="lname" placeholder="Es. Rossi">
+          <span class="err-msg" id="err-lname">Campo obbligatorio</span>
+        </div>
+        <div class="field full">
+          <label>PUNTO VENDITA</label>
+          <select id="store">
+            <option value="">— Seleziona il punto vendita —</option>
+            ${STORES.map(s=>`<option value="${s}">${s}</option>`).join('')}
+          </select>
+          <span class="err-msg" id="err-store">Seleziona un punto vendita</span>
+        </div>
+      </div>
+      <div class="info-box">
+        ⏱ Hai <strong>6 minuti</strong> per completare il test.<br>
+        Superato il tempo, ogni domanda non risposta vale <strong>-1 punto</strong> di penalità.
+      </div>
+      <button class="btn-start" onclick="startQuiz()">Inizia il test →</button>
+    </div>`;
+}
+
+function startQuiz(){
+  const fname=document.getElementById('fname').value.trim();
+  const lname=document.getElementById('lname').value.trim();
+  const store=document.getElementById('store').value;
+  let ok=true;
+  [['fname','err-fname',fname],['lname','err-lname',lname]].forEach(([id,eid,val])=>{
+    const el=document.getElementById(id),er=document.getElementById(eid);
+    if(!val){el.classList.add('field-error');er.style.display='block';ok=false;}
+    else{el.classList.remove('field-error');er.style.display='none';}
+  });
+  const sel=document.getElementById('store'),serr=document.getElementById('err-store');
+  if(!store){sel.classList.add('field-error');serr.style.display='block';ok=false;}
+  else{sel.classList.remove('field-error');serr.style.display='none';}
+  if(!ok) return;
+  userData={fname,lname,store,fullName:fname+' '+lname};
+  current=0;score=0;answered=false;secondsElapsed=0;overtime=false;penaltyPoints=0;wrongAnswers=[];
+  startTimer();renderQ();
+}
+
+function startTimer(){
+  timerInterval=setInterval(()=>{
+    secondsElapsed++;
+    updateTimer();
+    if(secondsElapsed>=TOTAL_SECONDS) overtime=true;
+  },1000);
+}
+
+function updateTimer(){
+  const pill=document.getElementById('timer-pill'),val=document.getElementById('timer-val'),pb=document.getElementById('penalty-badge');
+  if(!pill||!val) return;
+  const rem=TOTAL_SECONDS-secondsElapsed;
+  if(rem>0){
+    val.textContent=fmt(rem);
+    pill.className='timer-pill'+(rem<=30?' over':rem<=60?' warn':'');
+    if(pb) pb.style.display='none';
+  } else {
+    val.textContent='+'+fmt(Math.abs(rem));
+    pill.className='timer-pill over';
+    const left=questions.length-current-(answered?1:0);
+    penaltyPoints=Math.max(0,left);
+    if(pb){pb.style.display='inline-block';pb.textContent='-'+penaltyPoints+' pt penalità';}
+  }
+}
+
+function renderQ(){
+  if(current>=questions.length){stopTimer();showResults();return;}
+  const q=questions[current];
+  const pct=Math.round((current+1)/questions.length*100);
+  const rem=TOTAL_SECONDS-secondsElapsed;
+  const tc=rem<=0?'over':rem<=30?'over':rem<=60?'warn':'';
+  app.innerHTML=`
+    <div class="top-bar">
+      <div class="timer-pill ${tc}" id="timer-pill">
+        <div class="timer-dot"></div>
+        <span class="timer-val" id="timer-val">${rem>0?fmt(rem):'+'+fmt(Math.abs(rem))}</span>
+      </div>
+      <span class="penalty-badge" id="penalty-badge" style="${overtime?'display:inline-block':''}">${overtime?'-'+penaltyPoints+' pt penalità':''}</span>
+    </div>
+    <div class="prog-meta">
+      <span>Domanda ${current+1} di ${questions.length}</span>
+      <span id="score-top">Punteggio: ${score}</span>
+    </div>
+    <div class="pbar-bg"><div class="pbar-fill" style="width:${Math.max(5,pct)}%"></div></div>
+    <div class="card">
+      <div class="qlabel">Domanda ${current+1}</div>
+      <div class="qtext">${q.q}</div>
+      <div class="opts">
+        ${q.opts.map((o,i)=>`<button class="obtn" onclick="pick(${i})" id="opt${i}"><span class="oletter">${LETTERS[i]}</span><span>${o}</span></button>`).join('')}
+      </div>
+      <div class="fb" id="fb"></div>
+    </div>
+    <div class="nav">
+      <span class="score-disp" id="score-bot">${score} / ${current} corrette</span>
+      <button class="btn-next" id="btn-next" onclick="nextQ()">Prossima →</button>
+    </div>`;
+  answered=false;
+}
+
+function pick(i){
+  if(answered) return;
+  answered=true;
+  const q=questions[current];
+  const isOk=i===q.ans;
+  document.querySelectorAll('.obtn').forEach(b=>b.disabled=true);
+  document.getElementById('opt'+q.ans).classList.add(isOk?'correct':'reveal');
+  if(!isOk){
+    document.getElementById('opt'+i).classList.add('wrong');
+    wrongAnswers.push({num:current+1,q:q.q,given:q.opts[i],correct:q.opts[q.ans]});
+  } else {score++;}
+  const fb=document.getElementById('fb');
+  fb.className='fb '+(isOk?'ok':'ko');
+  fb.innerHTML='<strong>'+(isOk?'✓ Corretto! ':'✗ Risposta errata. ')+'</strong>'+q.exp;
+  document.getElementById('btn-next').style.display='inline-block';
+  document.getElementById('score-bot').textContent=score+' / '+(current+1)+' corrette';
+  document.getElementById('score-top').textContent='Punteggio: '+score;
+  if(overtime){
+    penaltyPoints=Math.max(0,questions.length-current-1);
+    const pb=document.getElementById('penalty-badge');
+    if(pb){pb.style.display='inline-block';pb.textContent='-'+penaltyPoints+' pt penalità';}
+  }
+}
+
+function nextQ(){current++;renderQ();}
+function stopTimer(){if(timerInterval){clearInterval(timerInterval);timerInterval=null;}}
+
+function showResults(){
+  const unanswered=questions.length-current;
+  if(overtime&&unanswered>0) penaltyPoints=unanswered;
+  const finalScore=Math.max(0,score-penaltyPoints);
+  const pct=Math.round(finalScore/questions.length*100);
+  let bc,bt;
+  if(pct>=85){bc='badge-gold';bt='Esperto — ottima preparazione!';}
+  else if(pct>=60){bc='badge-silver';bt='Buona base — ripassare alcuni argomenti.';}
+  else{bc='badge-bronze';bt='Da migliorare — ripassa le schede prodotto.';}
+  const wrongHTML=wrongAnswers.length>0?`
+    <div class="wrong-list">
+      <h3>Risposte errate (${wrongAnswers.length})</h3>
+      ${wrongAnswers.map(w=>`<div class="wrong-item"><strong>D.${w.num}: ${w.q}</strong>Tua risposta: ${w.given}<br>Risposta corretta: ${w.correct}</div>`).join('')}
+    </div>`:'<p style="font-size:13px;color:var(--green-mid);margin-bottom:1.5rem;text-align:center;">Nessuna risposta errata!</p>';
+  const penHTML=penaltyPoints>0?`<div class="penalty-note">Penalità tempo: -${penaltyPoints} pt (domande non completate entro 6 min)</div>`:'';
+  app.innerHTML=`
+    <div class="res-card">
+      <div class="res-user">${userData.fullName} · ${userData.store}</div>
+      <div class="res-big">${finalScore}<span style="font-size:30px;color:var(--hint)">/20</span></div>
+      <div class="res-sub">${pct}% · Tempo: ${fmt(secondsElapsed)}</div>
+      <div class="res-badge ${bc}">${bt}</div>
+      <div class="res-grid">
+        <div class="res-cell"><div class="res-num">${score}</div><div class="res-desc">Corrette</div></div>
+        <div class="res-cell"><div class="res-num">${wrongAnswers.length}</div><div class="res-desc">Errate</div></div>
+        <div class="res-cell"><div class="res-num">${penaltyPoints}</div><div class="res-desc">Penalità</div></div>
+        <div class="res-cell"><div class="res-num">${fmt(secondsElapsed)}</div><div class="res-desc">Tempo</div></div>
+      </div>
+      ${penHTML}
+      ${wrongHTML}
+      <button class="btn-mail" onclick="sendMail(${finalScore},${pct})">Invia risultato per email →</button>
+      <div class="mail-sent" id="mail-sent">Client email aperto — ricordati di cliccare Invia!</div>
+      <button class="btn-restart" onclick="showReg()">Rifai il test</button>
+    </div>`;
+}
+
+function sendMail(finalScore,pct){
+  const timeStr=fmt(secondsElapsed);
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('it-IT')+' '+now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  const wrongLines=wrongAnswers.length>0
+    ?wrongAnswers.map(w=>`  D.${w.num}: ${w.q}\n  Risposta data: ${w.given}\n  Risposta corretta: ${w.correct}`).join('\n\n')
+    :'  Nessuna risposta errata - punteggio perfetto!';
+  const body=`RISULTATO TEST MACCHINE DA CAFFE' AUTOMATICHE
+====================================================
+Nome:           ${userData.fullName}
+Punto vendita:  ${userData.store}
+Data e ora:     ${dateStr}
+
+PUNTEGGIO FINALE: ${finalScore} / 20  (${pct}%)
+  - Risposte corrette:  ${score} / 20
+  - Risposte errate:    ${wrongAnswers.length}
+  - Penalità tempo:     ${penaltyPoints>0?'-'+penaltyPoints+' pt':'nessuna'}
+  - Tempo impiegato:    ${timeStr}
+
+-------------------------------------
+DETTAGLIO RISPOSTE ERRATE
+-------------------------------------
+${wrongLines}
+
+====================================================
+DML Italia · Test Formazione Prodotto · ${now.getFullYear()}`;
+  const subject=`[Quiz Caffè] ${userData.fullName} — ${userData.store} — ${finalScore}/20 (${pct}%)`;
+  window.location.href=`mailto:${DEST_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  document.getElementById('mail-sent').style.display='block';
+}
+
+showReg();
+</script>
+</body>
+</html>
